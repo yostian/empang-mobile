@@ -46,11 +46,11 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug
 
-      - name: Rename APK to Qcc-debug.apk
-        run: mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/Qcc-debug.apk
+      - name: Rename APK to Empang-debug.apk
+        run: mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/Empang-debug.apk
 
       - name: Upload Debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Qcc-debug
-          path: android/app/build/outputs/apk/debug/Qcc-debug.apk
+          name: Empang-debug
+          path: android/app/build/outputs/apk/debug/Empang-debug.apk
