@@ -1,0 +1,51 @@
+# name: Build iOS Debug
+
+# on:
+#   workflow_run:
+#     workflows: ['Build Debug APK']
+#     types:
+#       - completed
+
+# jobs:
+#   build_ios_debug:
+#     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+#     runs-on: macos-latest
+
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v3
+
+#       - name: Set up Node.js
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: 18
+
+#       - name: Install dependencies
+#         run: npm install
+
+#       - name: Install CocoaPods
+#         working-directory: ios
+#         run: pod install
+
+#       - name: Build Debug .app (Xcode)
+#         working-directory: ios
+#         run: |
+#           xcodebuild \
+#             -workspace Empang.xcworkspace \
+#             -scheme Empang \
+#             -configuration Debug \
+#             -sdk iphoneos \
+#             -derivedDataPath build
+
+#       - name: Create Debug IPA
+#         run: |
+#           cd ios/build/Build/Products/Debug-iphoneos
+#           mkdir Payload
+#           cp -R Empang.app Payload/
+#           zip -r Empang-debug.ipa Payload
+
+#       - name: Upload Debug IPA artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: Empang-iOS-debug
+#           path: ios/build/Build/Products/Debug-iphoneos/Empang-debug.ipa

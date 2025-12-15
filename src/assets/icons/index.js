@@ -1,0 +1,10 @@
+export { default as TrophyIcon } from "./trophy.svg";
+export { default as ProfileIcon } from "./user-profile.svg";
+export { default as PenIcon } from "./pen.svg";
+export { default as AvatarMale2 } from "./avatars/avatar-male-2.svg";
+export { default as AvatarFemale2 } from "./avatars/avatar-female-2.svg";
+export { default as Trophy1 } from "./tropy1.png";
+export { default as Trophy2 } from "./tropy2.png";
+export { default as Trophy3 } from "./tropy3.png";
+export { default as ChangeAva } from "./change-avatar.svg";
+export { default as HomeIcon } from "./homepage.svg";
