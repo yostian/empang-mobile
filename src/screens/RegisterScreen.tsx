@@ -1,54 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   SafeAreaView,
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   ScrollView,
   Modal,
+  Animated,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import axios from 'axios';
-import { CommonActions } from '@react-navigation/native';
-import { API_BASE_URL } from '../helpers/apiHelper';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [fullname, setFullname] = useState('');
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [showPass, setShowPass] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
   const [modalMsg, setModalMsg] = useState('');
   const [modalSuccess, setModalSuccess] = useState(false);
 
+  /* ================= PASSWORD STRENGTH ================= */
+  const strengthAnim = useRef(new Animated.Value(0)).current;
+
+  const passwordStrength = useMemo(() => {
+    if (!password) return { label: '', color: '#9CA3AF', level: 0 };
+
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSymbol = /[^A-Za-z0-9]/.test(password);
+
+    if (
+      password.length >= 8 &&
+      hasUpper &&
+      hasLower &&
+      hasNumber &&
+      hasSymbol
+    ) {
+      return { label: 'Password Kuat', color: '#16A34A', level: 3 };
+    }
+
+    if (password.length >= 6 && hasLower && hasNumber) {
+      return { label: 'Password Sedang', color: '#F59E0B', level: 2 };
+    }
+
+    return { label: 'Password Lemah', color: '#DC2626', level: 1 };
+  }, [password]);
+
+  useEffect(() => {
+    Animated.timing(strengthAnim, {
+      toValue: passwordStrength.level,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [passwordStrength.level]);
+
+  const strengthWidth = strengthAnim.interpolate({
+    inputRange: [0, 3],
+    outputRange: ['0%', '100%'],
+  });
+
+  /* ================= VALIDATION ================= */
+  const confirmMismatch =
+    confirm.length > 0 && password.length > 0 && confirm !== password;
+
+  const isPhoneValid = phone.startsWith('08') || phone.startsWith('628');
+
+  const isFullnameValid = fullname.length > 0 && fullname.length <= 50;
+
+  const isFormValid =
+    isFullnameValid &&
+    emailRegex.test(email) &&
+    passwordStrength.level >= 2 &&
+    !confirmMismatch &&
+    isPhoneValid &&
+    address.length > 0;
+
+  /* ================= REGISTER ================= */
   function handleRegister() {
-    if (!fullname || !username || !password) {
-      setModalMsg('Lengkapi semua data ya');
-      setModalSuccess(false);
-      setShowModal(true);
-      return;
-    }
+    if (!isFormValid) return;
 
-    if (password !== confirm) {
-      setModalMsg('Password tidak sama');
-      setModalSuccess(false);
-      setShowModal(true);
-      return;
-    }
-
-    setModalMsg('Registrasi berhasil! Silakan login');
+    setModalMsg('Registrasi berhasil');
     setModalSuccess(true);
     setShowModal(true);
 
@@ -63,13 +109,11 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'android' ? 24 : 0}
       >
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* HEADER */}
           <LinearGradient
             colors={['#dac8acff', '#C8A27E', '#8B5E3C']}
             style={styles.header}
@@ -80,9 +124,9 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </LinearGradient>
 
-          {/* CONTENT */}
           <View style={styles.contentWrap}>
             <View style={styles.card}>
+              {/* NAMA */}
               <Text style={styles.label}>Nama Lengkap</Text>
               <View style={styles.inputWrap}>
                 <TextInput
@@ -92,18 +136,24 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                   style={styles.input}
                 />
               </View>
+              {!isFullnameValid && fullname.length > 0 && (
+                <Text style={styles.errorText}>Maksimal 50 karakter</Text>
+              )}
 
-              <Text style={[styles.label, { marginTop: 16 }]}>Username</Text>
+              {/* EMAIL */}
+              <Text style={[styles.label, { marginTop: 16 }]}>Email</Text>
               <View style={styles.inputWrap}>
                 <TextInput
-                  value={username}
-                  onChangeText={setUsername}
-                  placeholder="Username"
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="email@example.com"
                   autoCapitalize="none"
+                  keyboardType="email-address"
                   style={styles.input}
                 />
               </View>
 
+              {/* PASSWORD */}
               <Text style={[styles.label, { marginTop: 16 }]}>Password</Text>
               <View style={styles.inputWrap}>
                 <TextInput
@@ -115,6 +165,31 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                 />
               </View>
 
+              {password.length > 0 && (
+                <View style={styles.alertWrap}>
+                  <View style={styles.alertBarBg}>
+                    <Animated.View
+                      style={[
+                        styles.alertBar,
+                        {
+                          width: strengthWidth,
+                          backgroundColor: passwordStrength.color,
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      styles.alertText,
+                      { color: passwordStrength.color },
+                    ]}
+                  >
+                    {passwordStrength.label}
+                  </Text>
+                </View>
+              )}
+
+              {/* CONFIRM */}
               <Text style={[styles.label, { marginTop: 16 }]}>
                 Konfirmasi Password
               </Text>
@@ -128,6 +203,53 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                 />
               </View>
 
+              {confirmMismatch && (
+                <View style={styles.alertWrap}>
+                  <View style={styles.alertBarBg}>
+                    <View
+                      style={[
+                        styles.alertBar,
+                        { width: '100%', backgroundColor: '#DC2626' },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[styles.alertText, { color: '#DC2626' }]}>
+                    Password tidak sama
+                  </Text>
+                </View>
+              )}
+
+              {/* PHONE */}
+              <Text style={[styles.label, { marginTop: 16 }]}>
+                Nomor Telepon
+              </Text>
+              <View style={styles.inputWrap}>
+                <TextInput
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="08xxxxxxxxxx / 628xxxxxxxxxx"
+                  keyboardType="phone-pad"
+                  style={styles.input}
+                />
+              </View>
+              {!isPhoneValid && phone.length > 0 && (
+                <Text style={styles.errorText}>
+                  Nomor harus diawali 08 atau 628
+                </Text>
+              )}
+
+              {/* ADDRESS */}
+              <Text style={[styles.label, { marginTop: 16 }]}>Alamat</Text>
+              <View style={styles.inputWrap}>
+                <TextInput
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="Alamat lengkap"
+                  multiline
+                  style={[styles.input, { height: 80 }]}
+                />
+              </View>
+
               <TouchableOpacity
                 style={styles.showPass}
                 onPress={() => setShowPass(v => !v)}
@@ -137,22 +259,24 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={handleRegister} activeOpacity={0.9}>
+              {/* BUTTON */}
+              <TouchableOpacity
+                onPress={handleRegister}
+                activeOpacity={0.9}
+                disabled={!isFormValid}
+              >
                 <LinearGradient
-                  colors={['#dac8acff', '#C8A27E', '#8B5E3C']}
+                  colors={
+                    isFormValid
+                      ? ['#dac8acff', '#C8A27E', '#8B5E3C']
+                      : ['#D1D5DB', '#9CA3AF']
+                  }
                   style={styles.registerButton}
                 >
                   <Text style={styles.registerButtonText}>Daftar</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={styles.loginLink}
-              onPress={() => navigation.navigate('Login')}
-            >
-              <Text style={styles.loginText}>Sudah punya akun? Login</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
 
@@ -160,13 +284,8 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
         <Modal visible={showModal} transparent animationType="fade">
           <View style={styles.modalWrap}>
             <View style={styles.modalCard}>
-              <Text
-                style={[
-                  styles.modalTitle,
-                  { color: modalSuccess ? 'green' : 'red' },
-                ]}
-              >
-                {modalSuccess ? 'Berhasil' : 'Error'}
+              <Text style={[styles.modalTitle, { color: 'green' }]}>
+                Berhasil
               </Text>
               <Text>{modalMsg}</Text>
               <TouchableOpacity
@@ -185,6 +304,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
 export default RegisterScreen;
 
+/* ----------------- Styles ----------------- */
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#dac8acff' },
 
@@ -245,6 +365,12 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
 
+  errorText: {
+    color: '#DC2626',
+    fontSize: 12,
+    marginTop: 4,
+  },
+
   showPass: {
     marginTop: 10,
     alignItems: 'flex-end',
@@ -299,5 +425,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     alignItems: 'center',
+  },
+
+  alertWrap: { marginTop: 8 },
+  alertBarBg: {
+    width: '100%',
+    height: 6,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  alertBar: { height: '100%', borderRadius: 999 },
+  alertText: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
