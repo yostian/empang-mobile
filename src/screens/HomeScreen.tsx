@@ -36,9 +36,9 @@ const MENU_ITEMS = [
   },
   {
     key: 'service',
-    label: 'Service',
+    label: 'EM-Service',
     icon: icons.service,
-    onPress: () => {},
+    onPress: (navigation: any) => navigation.navigate('EMService'),
   },
   {
     key: 'history',

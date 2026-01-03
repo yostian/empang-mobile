@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 20,
   },
-  line: { flex: 1, height: 1, backgroundColor: '#D1D5DB' },
+  line: { flex: 1, height: 1, backgroundColor: '#b2b6baff' },
   dividerText: { paddingHorizontal: 14, color: '#6B7280' },
 
   socialGroup: { marginBottom: 10 },

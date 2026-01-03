@@ -11,41 +11,38 @@ import MainLayout from '../../components/MainLayout';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import GenericHeader from '../../components/GenericHeader';
 import { RootStackParamList } from '../../../App';
+import { useVehicleSelection, Vehicle } from '../../hooks/useVehicleSelection';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Emergency'>;
 
 /* ===== DUMMY DATA PROFILE ===== */
-const vehiclesFromProfile: any[] = [
-  // {
-  //   id: '1',
-  //   jenis: 'Matic',
-  //   merk: 'Honda',
-  //   model: 'Vario 125',
-  //   cc: '125 cc',
-  //   tahun: '2022',
-  // },
-  // {
-  //   id: '2',
-  //   jenis: 'Sport',
-  //   merk: 'Yamaha',
-  //   model: 'R15',
-  //   cc: '155 cc',
-  //   tahun: '2021',
-  // },
+const vehiclesFromProfile: Vehicle[] = [
+  {
+    id: '1',
+    jenis: 'Matic',
+    merk: 'Honda',
+    model: 'Vario 125',
+    cc: '125 cc',
+    tahun: '2022',
+  },
+  {
+    id: '2',
+    jenis: 'Sport',
+    merk: 'Honda',
+    model: 'CBR 150',
+    cc: '150 cc',
+    tahun: '2022',
+  },
 ];
 
 const EmergencyScreen: React.FC<Props> = ({ navigation }) => {
   const scrollRef = useRef<ScrollView>(null);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
-    vehiclesFromProfile.length === 1 ? vehiclesFromProfile[0].id : null,
-  );
-
   const [saveToProfile, setSaveToProfile] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  const selectedVehicle = vehiclesFromProfile.find(
-    v => v.id === selectedVehicleId,
-  );
+  /** ✅ LOGIC DIPINDAH KE HOOK */
+  const { mode, vehicles, selectedVehicle, selectedId, selectVehicle } =
+    useVehicleSelection(vehiclesFromProfile);
 
   /** 🔥 INI KUNCI FIX ANDROID */
   const onFocusScroll = (yOffset: number) => {
@@ -104,15 +101,15 @@ const EmergencyScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.card}>
           <Text style={styles.label}>🏍️ Detail Motor</Text>
 
-          {/* === BELUM ADA MOTOR === */}
-          {vehiclesFromProfile.length === 0 && (
+          {/* === KASUS 1: BELUM ADA MOTOR === */}
+          {mode === 'EMPTY' && (
             <>
               {[
                 { key: 'jenis', label: 'Jenis motor', y: 420 },
                 { key: 'merk', label: 'Merk motor', y: 500 },
                 { key: 'model', label: 'Model motor', y: 580 },
-                { key: 'cc', label: 'CC motor', y: 660 },
-                { key: 'tahun', label: 'Tahun pembuatan', y: 740 },
+                { key: 'cc', label: '125', y: 660 },
+                { key: 'tahun', label: '2021', y: 740 },
               ].map(item => (
                 <View key={item.key} style={{ marginBottom: 14 }}>
                   <Text style={styles.inputLabel}>{item.label}</Text>
@@ -148,18 +145,18 @@ const EmergencyScreen: React.FC<Props> = ({ navigation }) => {
           )}
 
           {/* === KASUS 2: MOTOR LEBIH DARI 1 === */}
-          {vehiclesFromProfile.length > 1 && (
+          {mode === 'MULTIPLE' && (
             <>
-              {vehiclesFromProfile.map(v => (
+              {vehicles.map(v => (
                 <TouchableOpacity
                   key={v.id}
-                  onPress={() => setSelectedVehicleId(v.id)}
+                  onPress={() => selectVehicle(v.id)}
                   style={{ marginBottom: 8 }}
                 >
                   <View style={styles.valueBox}>
                     <Text style={styles.valueText}>
                       {v.merk} {v.model} ({v.tahun})
-                      {selectedVehicleId === v.id ? ' ✓' : ''}
+                      {selectedId === v.id ? ' ✓' : ''}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -167,8 +164,8 @@ const EmergencyScreen: React.FC<Props> = ({ navigation }) => {
             </>
           )}
 
-          {/* === KASUS 3: HANYA 1 MOTOR (TAMPILAN ASLI, TIDAK BERUBAH) === */}
-          {vehiclesFromProfile.length === 1 && selectedVehicle && (
+          {/* === KASUS 3: HANYA 1 MOTOR === */}
+          {mode === 'SINGLE' && selectedVehicle && (
             <>
               <View style={styles.detailRow}>
                 <Text style={styles.detailKey}>Jenis</Text>
@@ -203,7 +200,7 @@ const EmergencyScreen: React.FC<Props> = ({ navigation }) => {
           style={styles.ctaButton}
           onPress={() => navigation.navigate('MechanicList')}
         >
-          <Text style={styles.ctaText}>Cari Mekanik Terdekat</Text>
+          <Text style={styles.ctaText}>Cari Mekanik</Text>
         </TouchableOpacity>
       </ScrollView>
     </MainLayout>
